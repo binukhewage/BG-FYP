@@ -1,0 +1,139 @@
+import pandas as pd
+import numpy as np
+import os
+import json
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKEND_DIR = os.path.dirname(SCRIPT_DIR)
+
+DATA_DIR = os.path.join(BACKEND_DIR, "data")
+PROCESSED_DIR = os.path.join(DATA_DIR, "processed")
+HOSPITALS_DIR = os.path.join(DATA_DIR, "hospitals")
+HOLDOUT_DIR = os.path.join(DATA_DIR, "holdout")
+REGISTRY_DIR = os.path.join(DATA_DIR, "registry")
+
+os.makedirs(HOSPITALS_DIR, exist_ok=True)
+os.makedirs(HOLDOUT_DIR, exist_ok=True)
+os.makedirs(REGISTRY_DIR, exist_ok=True)
+
+print("🚀 Creating BiasGuard Federated Dataset")
+
+df = pd.read_csv(os.path.join(PROCESSED_DIR, "merged_dataset.csv"))
+
+print("Loaded merged dataset:", len(df))
+
+# ---------------------------------------------------
+# create senior flag
+# ---------------------------------------------------
+
+df["is_senior"] = (df["age"] >= 65).astype(int)
+
+# ---------------------------------------------------
+# split groups
+# ---------------------------------------------------
+
+senior_dead = df[(df.is_senior == 1) & (df.mortality == 1)]
+senior_alive = df[(df.is_senior == 1) & (df.mortality == 0)]
+
+young_dead = df[(df.is_senior == 0) & (df.mortality == 1)]
+young_alive = df[(df.is_senior == 0) & (df.mortality == 0)]
+
+print("Group sizes:")
+print("senior_dead", len(senior_dead))
+print("senior_alive", len(senior_alive))
+print("young_dead", len(young_dead))
+print("young_alive", len(young_alive))
+
+# ---------------------------------------------------
+# hospital configs
+# ---------------------------------------------------
+
+CONFIG = {
+
+    "hospital_1": {"senior_ratio":0.8, "senior_mortality":0.30, "young_mortality":0.05},
+
+    "hospital_2": {"senior_ratio":0.2, "senior_mortality":0.05, "young_mortality":0.25},
+
+    "hospital_3": {"senior_ratio":0.5, "senior_mortality":0.15, "young_mortality":0.15},
+
+    "hospital_4": {"senior_ratio":0.7, "senior_mortality":0.35, "young_mortality":0.08},
+
+    "hospital_5": {"senior_ratio":0.3, "senior_mortality":0.08, "young_mortality":0.30},
+
+    "hospital_onboarding": {"senior_ratio":0.5, "senior_mortality":0.20, "young_mortality":0.12}
+}
+
+TARGET = 2000
+
+hospitals = []
+
+# ---------------------------------------------------
+# build hospitals
+# ---------------------------------------------------
+
+for name, cfg in CONFIG.items():
+
+    n = TARGET
+
+    n_senior = int(n * cfg["senior_ratio"])
+    n_young = n - n_senior
+
+    n_senior_dead = int(n_senior * cfg["senior_mortality"])
+    n_senior_alive = n_senior - n_senior_dead
+
+    n_young_dead = int(n_young * cfg["young_mortality"])
+    n_young_alive = n_young - n_young_dead
+
+    hospital_df = pd.concat([
+
+        senior_dead.sample(n_senior_dead, replace=True),
+        senior_alive.sample(n_senior_alive, replace=True),
+
+        young_dead.sample(n_young_dead, replace=True),
+        young_alive.sample(n_young_alive, replace=True)
+
+    ])
+
+    hospital_df = hospital_df.sample(frac=1).reset_index(drop=True)
+
+    senior_rate = hospital_df[hospital_df.is_senior==1]["mortality"].mean()
+    young_rate = hospital_df[hospital_df.is_senior==0]["mortality"].mean()
+
+    gap = abs(senior_rate-young_rate)
+
+    if name == "hospital_onboarding":
+
+        path = os.path.join(HOLDOUT_DIR, name+".csv")
+
+    else:
+
+        path = os.path.join(HOSPITALS_DIR, name+".csv")
+
+        hospitals.append({
+            "id": len(hospitals)+1,
+            "file": name+".csv",
+            "patients": len(hospital_df),
+            "active": True,
+            "type": "core"
+        })
+
+    hospital_df.to_csv(path, index=False)
+
+    print(
+        name,
+        "| patients:", len(hospital_df),
+        "| senior mortality:", round(senior_rate,3),
+        "| young mortality:", round(young_rate,3),
+        "| gap:", round(gap,3)
+    )
+
+# ---------------------------------------------------
+# registry
+# ---------------------------------------------------
+
+registry = {"hospitals": hospitals}
+
+with open(os.path.join(REGISTRY_DIR,"hospitals.json"),"w") as f:
+    json.dump(registry,f,indent=4)
+
+print("\n✅ Dataset ready for BiasGuard federation")

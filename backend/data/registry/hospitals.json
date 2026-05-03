@@ -1,0 +1,62 @@
+{
+    "hospitals": [
+        {
+            "id": 1,
+            "file": "hospital_1.csv",
+            "patients": 1496,
+            "avg_age": 73.02,
+            "senior_pct": 85.0,
+            "label": "Geriatric ICU",
+            "active": true,
+            "type": "core"
+        },
+        {
+            "id": 2,
+            "file": "hospital_2.csv",
+            "patients": 1496,
+            "avg_age": 53.26,
+            "senior_pct": 15.0,
+            "label": "General/mixed",
+            "active": true,
+            "type": "core"
+        },
+        {
+            "id": 3,
+            "file": "hospital_3.csv",
+            "patients": 1496,
+            "avg_age": 65.79,
+            "senior_pct": 60.0,
+            "label": "Senior-leaning",
+            "active": true,
+            "type": "core"
+        },
+        {
+            "id": 4,
+            "file": "hospital_4.csv",
+            "patients": 1496,
+            "avg_age": 69.9,
+            "senior_pct": 75.0,
+            "label": "Senior-majority",
+            "active": true,
+            "type": "core"
+        },
+        {
+            "id": 5,
+            "file": "hospital_5.csv",
+            "patients": 1496,
+            "avg_age": 55.98,
+            "senior_pct": 25.0,
+            "label": "Young-majority",
+            "active": true,
+            "type": "core"
+        },
+        {
+            "id": 6,
+            "file": "hospital_6.csv",
+            "patients": 1496,
+            "avg_age": 63.1,
+            "active": true,
+            "type": "onboarded"
+        }
+    ]
+}

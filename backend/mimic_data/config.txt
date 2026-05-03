@@ -1,0 +1,57 @@
+MODEL_FEATURES = [
+    "age",
+    "is_senior",
+    "mean_heartrate",
+    "mean_sao2",
+    "mean_bp",
+    "glucose",
+    "creatinine",
+    "WBC x 1000",
+    "BUN"
+]
+
+TARGET_COLUMN = "mortality"
+PROTECTED_ATTRIBUTE = "is_senior"
+INPUT_DIM = len(MODEL_FEATURES)
+
+
+# ----------------------------
+# Training Settings
+# ----------------------------
+LOCAL_EPOCHS = 8
+LEARNING_RATE = 0.01
+NUM_ROUNDS = 20
+
+
+# ----------------------------
+# Fairness Settings
+# ----------------------------
+
+# stronger aggregation penalty
+FAIRNESS_LAMBDA = 25.0
+
+
+# stronger fairness regularization
+FAIRNESS_LOSS_WEIGHT = 2.0
+
+
+# reject extremely biased hospitals early
+BIAS_REJECTION_THRESHOLD = 0.6
+
+
+# aggregation penalty mode
+FAIRNESS_PENALTY_MODE = "inverse"
+
+
+# ----------------------------
+# Differential Privacy
+# ----------------------------
+
+DP_ENABLED = True
+CLIP_VALUE = 1.0
+NOISE_SCALE = 0.001
+
+
+# legacy aliases
+DP_SIGMA = 0.001
+MAX_GRAD_NORM = 1.0
